@@ -1,0 +1,157 @@
+﻿@page "/"
+@using Inspirational_Quotes_Frontend.Data
+@using Quote = Inspirational_Quotes_Frontend.ModelResponse.QuoteRequest
+@layout MainLayout
+@inject ISnackbar Snackbar
+
+<MudContainer>
+      <MudToolBar Style="margin-bottom: 22px">
+        <div class="row d-flex justify-content-between w-100">
+            <MudText Typo="Typo.h4" Style="padding-bottom: 5px">
+                Inspirational Quotes DashBoard
+            </MudText>
+            <div class="d-flex justify-content-between w-100">
+                <div class="d-flex col-4 gap-3">
+                    <select class="form-select-sm" @onchange="PerformSearchfilter">
+                        <option value="ALL">ALL</option>
+                        <option value="author">Author</option>
+                        <option value="tag">Tag</option>
+                        <option value="descr">Description</option>
+                    </select>
+                        <input  placeholder="Search quotes..." class="mud-input" @oninput="PerformSearch"/>
+                </div>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="OpenAddQuote">Add Quote</MudButton>
+            </div>
+        </div>
+    </MudToolBar>
+    @if(@quotes.Count()>0)
+    {
+        <MudTable Items="@quotes" Hover="true" Class="my-custom-table shadow">
+            <HeaderContent>
+                <MudTh>@nameof(Quote.Id)</MudTh>
+                <MudTh>@nameof(Quote.Author)</MudTh>
+                <MudTh>@nameof(Quote.Tags)</MudTh>
+                <MudTh>@nameof(Quote.QuoteDesp)</MudTh>
+                <MudTh>Action</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>@context.Id</MudTd>
+                <MudTd>@context.Author</MudTd>
+                <MudTd>
+                    @foreach (var (Tag, index) in @context.Tags.Select((tag, index) => (tag, index)))
+                    {
+                        <MudChip Color="@GetChipColor(index)" Variant="Variant.Outlined" Size="Size.Small">@Tag</MudChip>
+                    }
+                </MudTd>
+                <MudTd>@context.QuoteDesp</MudTd>
+                <MudTd>
+                    <div style="display: flex;">
+                        <MudIconButton Icon="@Icons.Material.Outlined.Edit" Color="Color.Primary" @onclick="() => EditQuote(context.Id)" />
+                        <MudIconButton Icon="@Icons.Material.Outlined.RemoveRedEye" Color="Color.Primary" @onclick="() => ViewQuote(context.Id)" />
+                        <MudIconButton Icon="@Icons.Material.Outlined.Delete" Color="Color.Secondary" @onclick="() => DeleteQuote(context.Id)" />
+                    </div>
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
+    else
+    {
+        <MudCard Style="padding: 8px;">
+            <MudCardHeader>
+                <MudText Typo="Typo.h5">Inspirational Quotes Dashboard</MudText>
+            </MudCardHeader>
+            <MudCardContent>
+                <MudCard Style="padding: 8px;">
+                    <MudText Typo="Typo.body1" Class="fw-bold">No Quotes found</MudText>
+                </MudCard>
+            </MudCardContent>
+        </MudCard>
+    }
+
+    <div class="d-flex flex-column align-center">
+        @* <MudPagination BoundaryCount="1" MiddleCount="1" Count="totalItems" PageSize="@pageSize" @bind-Selected="@currentPage" OnPageChanged="OnPageChanged" /> *@
+    </div>
+</MudContainer>
+
+@code {
+    private List<Quote> quotes = new List<Quote>();
+    private string searchTerm = "";
+    private string selectedFilter = "ALL"; 
+    private string filterValue = ""; 
+    private Quote newQuote = new Quote();
+    private int currentPage = 1;
+    private int pageSize = 10;
+    private int totalItems;
+    private int _selected = 11;
+
+    [Inject]
+    private NavigationManager NavigationManager { get; set; }
+    [Inject]
+    private QuoteService QuoteService { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        int startIndex = (currentPage - 1) * pageSize;
+        var result = await QuoteService.GetQuotes(selectedFilter, searchTerm, startIndex, pageSize);
+        quotes = result;
+        totalItems = result.Count();
+
+    }
+    private async Task PerformSearch(ChangeEventArgs e)
+    {
+        searchTerm = e?.Value.ToString();
+        await LoadData();
+    }
+    private async Task PerformSearchfilter(ChangeEventArgs e)
+    {
+        selectedFilter = e?.Value.ToString();
+        await LoadData();
+    }
+    private async Task OnPageChanged(int newPage)
+    {
+        currentPage = newPage;
+        await LoadData();
+    }
+
+    private IEnumerable<Quote> filteredQuotes =>
+        quotes.Where(q => q.Author.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                          // q.Tags.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                          q.QuoteDesp.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+
+    private void OpenAddQuote()
+    {
+        NavigationManager.NavigateTo("/addquote");
+    }
+    private void EditQuote(int id)
+    {
+        NavigationManager.NavigateTo($"/editquote/{id}");
+    }
+    private void ViewQuote(int id)
+    {
+        NavigationManager.NavigateTo($"/viewquote/{id}");
+    }
+    private void DeleteQuote(int id)
+    {
+        var isSuccess =  QuoteService.DeleteQuote(id);
+        Snackbar.Add(isSuccess.Result, isSuccess.Result.Contains("Successfully") ? Severity.Success : Severity.Error);
+    }
+    private MudBlazor.Color GetChipColor(int index)
+    {
+        switch (index % 4)
+        {
+            case 0:
+                return Color.Primary;
+            case 1:
+                return Color.Secondary;
+            case 2:
+                return Color.Info;
+            default:
+                return Color.Default;
+        }
+    }
+}
