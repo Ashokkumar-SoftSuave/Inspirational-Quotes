@@ -1,6 +1,8 @@
 using inspirational_quotes_Backend.DBContext;
 using inspirational_quotes_Backend.Services.Repositories.Abstractions;
 using inspirational_quotes_Backend.Services.Repositories.Implementations;
+using inspirational_quotes_Backend.Services.Service.Abstractions;
+using inspirational_quotes_Backend.Services.Service.Implentations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using System;
@@ -8,6 +10,7 @@ using System;
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
 builder.Services.AddScoped<IQuoteRepository, QuoteRepository>();
+builder.Services.AddScoped<IQuoteService, QuoteService>();
 builder.Services.AddDbContext<QuoteDBContext>(options =>
         options.UseSqlite(configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddControllers();

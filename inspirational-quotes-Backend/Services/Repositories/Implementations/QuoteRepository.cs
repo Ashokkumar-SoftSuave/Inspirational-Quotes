@@ -25,57 +25,46 @@ namespace inspirational_quotes_Backend.Services.Repositories.Implementations
             return true;
         }
 
-        public async Task<bool> DeleteAsync(int id)
+        public async Task<bool> DeleteAsync(Quote quote)
         {
-            var quote = await _db.Quotes.FindAsync(id);
-            if (quote != null)
-            {
-                _db.Quotes.Remove(quote);
-                await _db.SaveChangesAsync();
-                return true;
-            }
-            return false;
+            _db.Quotes.Remove(quote);
+            await _db.SaveChangesAsync();
+            return true;
         }
 
         public async Task<Quote?> GetAsync(int id)
         {
             return await _db.Quotes.FindAsync(id);
-        }       
+        }
 
         public async Task<bool> UpdateAsync(Quote quote)
         {
-            var existingQuote = await GetAsync(quote.Id);
-            if (existingQuote == null)
-            {
-                return false;
-            }
-            existingQuote.Author = quote.Author;
-            existingQuote.Tags = quote.Tags;
-            existingQuote.QuoteDesp = quote.QuoteDesp;
+            _db.Update(quote);
             await _db.SaveChangesAsync();
             return true;
         }
+
         public async Task<List<Quote>> GetFilteredQuotesAsync(string filterName, string filterValue)
         {
             IQueryable<Quote> filteredQuotes = _db.Quotes;
-            if(filterValue != "" && filterValue != null)
+            if (filterValue != "" && filterValue != null)
             {
                 switch (filterName.ToLower())
                 {
                     case "author":
-                        filteredQuotes = filteredQuotes.Where(q => q.Author.Contains(filterValue));
+                        filteredQuotes = filteredQuotes.Where(q => q.Author.ToLower().Contains(filterValue));
                         break;
                     case "tag":
-                        filteredQuotes = filteredQuotes.Where(q => q.Tags.Contains(filterValue));
+                        filteredQuotes = filteredQuotes.Where(q => q.Tags.ToLower().Contains(filterValue));
                         break;
                     case "desp":
-                        filteredQuotes = filteredQuotes.Where(q => q.QuoteDesp.Contains(filterValue));
+                        filteredQuotes = filteredQuotes.Where(q => q.QuoteDesp.ToLower().Contains(filterValue));
                         break;
                     case "all":
                         filteredQuotes = filteredQuotes.Where(q =>
-                            q.Author.Contains(filterValue) ||
-                            q.Tags.Contains(filterValue) ||
-                            q.QuoteDesp.Contains(filterValue));
+                            q.Author.ToLower().Contains(filterValue) ||
+                            q.Tags.ToLower().Contains(filterValue) ||
+                            q.QuoteDesp.ToLower().Contains(filterValue));
                         break;
                     default:
                         break;
@@ -88,13 +77,20 @@ namespace inspirational_quotes_Backend.Services.Repositories.Implementations
             }
             return null!;
         }
+
+        public async Task<List<Quote>> GetAll()
+        {
+            return await _db.Quotes.ToListAsync();
+        }
+
+        public async Task<List<Quote>> GetAllQuotes(SearchModel filter)
+        {
+            return await _db.Quotes.Where(_ => _.Author.ToLower().Contains(filter.authorName.ToLower()) && _.Tags.ToLower().Contains(filter.tag.ToLower()) && _.QuoteDesp.ToLower().Contains(filter.desp.ToLower())).ToListAsync();
+        }
         public async Task<List<string>> GetAllTagsAsync()
         {
-            return await _db.Quotes.Select(t=> t.Tags).ToListAsync();
+            return await _db.Quotes.Select(t => t.Tags).ToListAsync();
         }
-        public void Dispose()
-        {
-            _db.Dispose();
-        }
+
     }
 }

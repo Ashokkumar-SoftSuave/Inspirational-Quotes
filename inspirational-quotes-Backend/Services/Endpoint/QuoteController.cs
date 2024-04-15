@@ -1,5 +1,6 @@
 ﻿using inspirational_quotes_Backend.Models;
 using inspirational_quotes_Backend.Services.Repositories.Abstractions;
+using inspirational_quotes_Backend.Services.Service.Abstractions;
 using Microsoft.AspNetCore.Mvc;
 using QuoteModel = inspirational_quotes_Backend.Models.Quote;
 
@@ -7,10 +8,10 @@ namespace inspirational_quotes_Backend.Services.Endpoint
 {
     public class QuoteController:ControllerBase
     {
-        private IQuoteRepository _quoteRepository;
-        public QuoteController(IQuoteRepository quoteRepository)
+        private readonly IQuoteService _quoteRepository;
+        public QuoteController(IQuoteService quoteService)
         {
-            _quoteRepository = quoteRepository;
+            _quoteRepository = quoteService;
         }
         
         [HttpGet("getquote/{id}")]
@@ -18,7 +19,7 @@ namespace inspirational_quotes_Backend.Services.Endpoint
         {
             try
             {
-                var quote = await _quoteRepository.GetAsync(id);
+                var quote = await _quoteRepository.GetQuote(id);
                 if (quote == null)
                 {
                     return NotFound($"Quote with ID {id} not found");
@@ -40,7 +41,7 @@ namespace inspirational_quotes_Backend.Services.Endpoint
                     return BadRequest("No quotes provided");
                 }
 
-                var isSuccess = await _quoteRepository.CreateAsync(quotes);
+                var isSuccess = await _quoteRepository.Create(quotes);
                 if (isSuccess)
                 {
                     return Ok("Quotes created successfully");
@@ -54,7 +55,7 @@ namespace inspirational_quotes_Backend.Services.Endpoint
         }
 
         [HttpPut("updatequote/{id}")]
-        public async Task<IActionResult> UpdateQuote([FromBody]Quote quote)
+        public async Task<IActionResult> UpdateQuote([FromBody] Quote quote)
         {
             try
             {
@@ -62,7 +63,7 @@ namespace inspirational_quotes_Backend.Services.Endpoint
                 {
                     return BadRequest("Invalid data provided for update");
                 }               
-                var isSuccess = await _quoteRepository.UpdateAsync(quote);
+                var isSuccess = await _quoteRepository.Update(quote);
                 if (isSuccess)
                 {
                     return Ok("Quote updated successfully");
@@ -75,12 +76,12 @@ namespace inspirational_quotes_Backend.Services.Endpoint
             }
         }
 
-        [HttpGet("deletequote/{id}")]
+        [HttpDelete("deletequote/{id}")]
         public async Task<IActionResult> DeleteQuote(int id)
         {
             try
             {
-                var isSuccess = await _quoteRepository.DeleteAsync(id);
+                var isSuccess = await _quoteRepository.Delete(id);
                 if (!isSuccess)
                 {
                     return NotFound($"Quote with ID: {id} not found, deletion failed");
@@ -97,7 +98,7 @@ namespace inspirational_quotes_Backend.Services.Endpoint
         {
             try
             {
-                var data = await _quoteRepository.GetFilteredQuotesAsync(filterName, filterValue);
+                var data = await _quoteRepository.GetAll();
                 return Ok(data);
             }
             catch (Exception ex)
@@ -110,7 +111,7 @@ namespace inspirational_quotes_Backend.Services.Endpoint
         {
             try
             {
-                var Tags = await _quoteRepository.GetAllTagsAsync();
+                var Tags = await _quoteRepository.GetAllTags();
                 var TagList = string.Join(",", Tags);
                 var data = TagList.Split(',');
                 return Ok(data);
@@ -118,6 +119,20 @@ namespace inspirational_quotes_Backend.Services.Endpoint
             catch (Exception ex)
             {
                 return StatusCode(500, ex.Message);
+            }
+        }
+
+        [HttpGet("search")]
+        public async Task<IActionResult> Search(SearchModel filter)
+        {
+            try
+            {
+                var response = await _quoteRepository.GetAll(filter);
+                return Ok(response);
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, "Failed to get data");
             }
         }
     }
