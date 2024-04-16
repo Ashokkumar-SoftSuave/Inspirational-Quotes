@@ -94,7 +94,7 @@ namespace inspirational_quotes_Backend.Services.Endpoint
             }
         }
         [HttpGet("searchquote")]
-        public async Task<IActionResult> SearchQuote(string filterName, string filterValue = null)
+        public async Task<IActionResult> SearchQuote()
         {
             try
             {

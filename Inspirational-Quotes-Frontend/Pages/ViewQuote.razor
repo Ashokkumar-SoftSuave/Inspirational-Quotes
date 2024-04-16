@@ -23,12 +23,12 @@
                 <MudCardContent>
                     <MudCard Class="shadow p-2 mb-5 bg-white rounded" Style="margin: 2px;">
                         <div class="col">
-                            <label for="author">Author</label>
+                            <label for="author">Author:</label>
                             <MudText id="author" Placeholder="Author" >@quote.Author</MudText><br />
                         </div>
 
                         <div class="row">
-                            <label for="Tag">Tags</label>
+                            <label for="Tag">Tags:</label>
                             <div>
                                 @foreach (var (Tag, index) in quote.Tags.Select((tag, index) => (tag, index)))
                                 {

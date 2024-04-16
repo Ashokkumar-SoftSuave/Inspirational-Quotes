@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace inspirational_quotes_Backend.Services.Repositories.Implementations
 {
-    public class QuoteRepository : IQuoteRepository, IDisposable
+    public class QuoteRepository : IQuoteRepository
     {
         private readonly QuoteDBContext _db;
 
@@ -85,7 +85,25 @@ namespace inspirational_quotes_Backend.Services.Repositories.Implementations
 
         public async Task<List<Quote>> GetAllQuotes(SearchModel filter)
         {
-            return await _db.Quotes.Where(_ => _.Author.ToLower().Contains(filter.authorName.ToLower()) && _.Tags.ToLower().Contains(filter.tag.ToLower()) && _.QuoteDesp.ToLower().Contains(filter.desp.ToLower())).ToListAsync();
+            try
+            {
+                var tags = (filter.tag ?? "").ToLower().Split(',').Select(t => t.Trim());
+                var quotesQuery = _db.Quotes
+                    .Where(_ =>
+                        (_.Author.ToLower().Contains((filter.authorName ?? string.Empty).ToLower()) || string.IsNullOrEmpty(filter.authorName)) &&
+                        (_.QuoteDesp.ToLower().Contains((filter.desp ?? string.Empty).ToLower()) || string.IsNullOrEmpty(filter.desp)));
+
+                if (!string.IsNullOrEmpty(filter.tag))
+                {
+                    return quotesQuery.AsEnumerable().Where(q => tags.Any(_ => q.Tags.ToLower().Split(",", StringSplitOptions.None).Any(t => t.Equals(_)))).ToList();
+                }
+                return await quotesQuery.ToListAsync();
+            }
+            catch (Exception ex)
+            {
+
+                throw ex;
+            }
         }
         public async Task<List<string>> GetAllTagsAsync()
         {

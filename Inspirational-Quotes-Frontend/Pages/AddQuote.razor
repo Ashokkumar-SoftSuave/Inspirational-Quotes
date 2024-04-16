@@ -45,7 +45,7 @@
                                 @foreach (var tagIndex in Enumerable.Range(0, quote.Tags.Count))
                                 {
                                     <div class="col">
-                                        <p>Tag - @(tagIndex + 1)</p>
+                                        <p>Tag - @(tagIndex + 1):</p>
                                         <div class="d-flex align-items-center">
                                             <div class="flex-grow-1">
                                                 <MudTextField T=string @bind-Value="quote.Tags[tagIndex]" Variant="Variant.Outlined" Clearable="true" Class="py-2" />

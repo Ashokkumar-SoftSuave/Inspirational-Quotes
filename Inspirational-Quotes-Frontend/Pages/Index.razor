@@ -5,13 +5,65 @@
 @inject ISnackbar Snackbar
 
 <MudContainer>
+        <MudDrawerContainer Class="mud-height-full">
+            <MudDrawer @bind-Open="@openEnd" Fixed="false" Anchor="Anchor.End" Elevation="0" Variant="@DrawerVariant.Persistent" Style="@(openEnd ?"padding: 15px; min-hight: 200px":"width:0")" Class="@(openEnd ?"w-25 shadow" :"w-0")">
+                <MudDrawerHeader>
+                    <div class="d-flex justify-content-between w-100">
+                        <MudText Typo="Typo.h6">Quote Filter</MudText>
+                        <MudIconButton Icon="@Icons.Material.Filled.Clear" Color="Color.Secondary" @onclick="() => {openEnd = !openEnd;}" />
+                    </div>
+                </MudDrawerHeader>
+                <MudNavMenu>
+                <div>
+                    <label for="author">Author: </label>
+                    <MudTextField @bind-Value="@quoteSearch.Author" id="author" Placeholder="Author" /><br />
+                </div>
+
+                <div>
+                    @foreach (var tagIndex in Enumerable.Range(0, quoteSearch.Tags.Count))
+                    {
+                        <div class="col"> 
+                            <p>Tag - @(tagIndex + 1): </p>
+                             <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <MudTextField T=string @bind-Value="quoteSearch.Tags[tagIndex]" Variant="Variant.Outlined" Clearable="true" Class="py-2" />
+                                </div>
+
+                                @if (quoteSearch.Tags.Count > 1)
+                                {
+                                    <MudIconButton Icon="@Icons.Material.Filled.Clear" Color="Color.Secondary" @onclick="() => RemoveTag(quoteSearch, quoteSearch.Tags[tagIndex])" />
+                                }
+
+                                @if (quoteSearch.Tags.Count == tagIndex + 1)
+                                {
+                                    <MudIconButton Icon="@Icons.Material.Filled.Add" Color="Color.Primary" @onclick="() => AddTag(quoteSearch)" />
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+                <div
+                    <label for="quoteDesc">Quote Description:</label>
+                    <MudTextField @bind-Value="@quoteSearch.QuoteDesp" id="author" Placeholder="Author" Class="w-20"/><br />
+                </div>
+                <div>
+                    <div class="row m-md-2 align-items-center">
+                        <div class="d-flex  justify-content-between w-100">
+                            <button class="btn btn-secondary" @onclick="ClearFilter">Clear Filter</button>
+                            <button class="btn btn-primary" @onclick="ApplyFilter">Search Quote</button>
+                        </div>
+                    </div>
+                </div>
+                </MudNavMenu>
+            </MudDrawer>
+        </MudDrawerContainer>
       <MudToolBar Style="margin-bottom: 22px">
         <div class="row d-flex justify-content-between w-100">
             <MudText Typo="Typo.h4" Style="padding-bottom: 5px">
                 Inspirational Quotes DashBoard
             </MudText>
             <div class="d-flex justify-content-between w-100">
-                <div class="d-flex col-4 gap-3">
+             @*    <div class="d-flex col-4 gap-3">
                     <select class="form-select-sm" @onchange="PerformSearchfilter">
                         <option value="ALL">ALL</option>
                         <option value="author">Author</option>
@@ -19,11 +71,17 @@
                         <option value="descr">Description</option>
                     </select>
                         <input  placeholder="Search quotes..." class="mud-input" @oninput="PerformSearch"/>
-                </div>
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="OpenAddQuote">Add Quote</MudButton>
+                </div> *@
+                    <div class="ms-auto" style="margin-right: -42px">
+                        <!-- 'ms-auto' pushes the following content to the right -->
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="OpenAddQuote">Add Quote</MudButton>
+                    <MudIconButton Icon="@Icons.Material.Outlined.FilterAlt" Color="Color.Default" OnClick="@ToggleEndDrawer" />
+                    </div>
             </div>
         </div>
     </MudToolBar>
+   <div style="@((openEnd) ? "filter: blur(5px); transition: filter 0.3s ease;" : "")">
+
     @if(@quotes.Count()>0)
     {
         <MudTable Items="@quotes" Hover="true" Class="my-custom-table shadow">
@@ -67,6 +125,7 @@
             </MudCardContent>
         </MudCard>
     }
+    </div>
 
     <div class="d-flex flex-column align-center">
         @* <MudPagination BoundaryCount="1" MiddleCount="1" Count="totalItems" PageSize="@pageSize" @bind-Selected="@currentPage" OnPageChanged="OnPageChanged" /> *@
@@ -83,6 +142,9 @@
     private int pageSize = 10;
     private int totalItems;
     private int _selected = 11;
+    public bool Rtl { get; set; }
+    bool openEnd = false;
+    private Quote quoteSearch = new Quote { Tags = new List<string>() { ""} };
 
     [Inject]
     private NavigationManager NavigationManager { get; set; }
@@ -92,12 +154,16 @@
     protected override async Task OnInitializedAsync()
     {
         await LoadData();
+        quoteSearch = new Quote
+            {
+                Tags = new List<string> { "" }
+            };
     }
 
     private async Task LoadData()
     {
         int startIndex = (currentPage - 1) * pageSize;
-        var result = await QuoteService.GetQuotes(selectedFilter, searchTerm, startIndex, pageSize);
+        var result = await QuoteService.GetQuotes(quoteSearch);
         quotes = result;
         totalItems = result.Count();
 
@@ -153,5 +219,29 @@
             default:
                 return Color.Default;
         }
+    }
+    void ToggleEndDrawer()
+    {
+        openEnd = !openEnd;
+    }
+    private void AddTag(Quote quote)
+    {
+        quote.Tags.Add("");
+    }
+    private void RemoveTag(Quote quote, string tag)
+    {
+        quote.Tags.Remove(tag);
+    }
+    private async Task ApplyFilter()
+    {
+        await LoadData();
+        openEnd = !openEnd;
+    }
+    private async Task ClearFilter()
+    {
+        quoteSearch = new Quote
+            {
+                Tags = new List<string> { "" }
+            };
     }
 }

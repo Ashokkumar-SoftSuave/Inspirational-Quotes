@@ -13,9 +13,27 @@ namespace Inspirational_Quotes_Frontend.Data
             _httpClient.BaseAddress = new Uri("https://localhost:7097/");
         }
 
-        public async Task<List<QuoteRequest>> GetQuotes(string filterName, string filterValue, int startIndex, int pageSize)
+        public async Task<List<QuoteRequest>> GetQuotes()
         {
-            var list = await _httpClient.GetFromJsonAsync<List<QuoteResponse>>($"searchquote?filterName={filterName}&filterValue={filterValue}");
+            var list = await _httpClient.GetFromJsonAsync<List<QuoteResponse>>("searchquote");
+            var quoteList = list.Select(q => new QuoteRequest
+            {
+                Id = q.Id,
+                Author = q.Author,
+                Tags = q.Tags?.Split(",").ToList(),
+                QuoteDesp = q.QuoteDesp
+            }).ToList();
+            return quoteList;
+        } 
+        public async Task<List<QuoteRequest>> GetQuotes(QuoteRequest quote)
+        {
+            var parameters = new List<KeyValuePair<string, string?>>()
+            {
+                new KeyValuePair<string, string?>("authorName", quote.Author ?? string.Empty),
+                new KeyValuePair<string, string?>("tag", string.Join(", ",quote.Tags) ?? string.Empty),
+                new KeyValuePair<string, string?>("desp", quote.QuoteDesp ?? string.Empty),
+            };
+            var list = await _httpClient.GetFromJsonAsync<List<QuoteResponse>>($"search{QueryString.Create(parameters).ToString()}");
             var quoteList = list.Select(q => new QuoteRequest
             {
                 Id = q.Id,
